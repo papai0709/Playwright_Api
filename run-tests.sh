@@ -72,7 +72,7 @@ run_tests() {
     print_info "Running $description..."
     print_info "Tags: $tags"
 
-    mvn clean test -Dcucumber.filter.tags="$tags"
+    mvn test -Dtest=**/CucumberTestRunner -Dcucumber.filter.tags="$tags"
 
     if [ $? -eq 0 ]; then
         print_success "$description completed successfully"
@@ -95,21 +95,21 @@ run_docker_tests() {
     print_info "Building Docker image..."
     docker build -t playwright-api-tests .
 
-    print_info "Running tests in Docker container..."
+    print_info "Running Playwright tests in Docker container..."
     docker run --rm \
         -v "$(pwd)/target:/app/target" \
         playwright-api-tests \
-        mvn clean test -Dcucumber.filter.tags="@sanity"
+        mvn test -Dtest=**/CucumberTestRunner -Dcucumber.filter.tags="@sanity"
 
-    print_success "Docker tests completed"
+    print_success "Docker Playwright tests completed"
 }
 
 # Function to run security tests
 run_security_tests() {
     print_info "Running security analysis..."
 
-    print_info "Running security-tagged tests..."
-    mvn clean test -Dcucumber.filter.tags="@security"
+    print_info "Running security-tagged Playwright tests..."
+    mvn test -Dtest=**/CucumberTestRunner -Dcucumber.filter.tags="@security"
 
     print_success "Security tests completed"
 }

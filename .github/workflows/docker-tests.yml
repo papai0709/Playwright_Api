@@ -1,4 +1,4 @@
-name: Docker Container Testing
+name: Docker Playwright Container Testing
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  docker-tests:
+  docker-playwright-tests:
     runs-on: ubuntu-latest
 
     steps:
@@ -18,21 +18,21 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
-    - name: Build Docker image
+    - name: Build Playwright Docker image
       run: |
         docker build -t playwright-api-tests .
 
-    - name: Run tests in Docker container
+    - name: Run Playwright tests in Docker container
       run: |
         docker run --rm \
           -v ${{ github.workspace }}/target:/app/target \
           playwright-api-tests \
-          mvn clean test -Dcucumber.filter.tags="@sanity"
+          mvn test -Dtest=**/CucumberTestRunner -Dcucumber.filter.tags="@sanity"
 
-    - name: Upload Docker Test Reports
+    - name: Upload Docker Playwright Test Reports
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: docker-test-reports
+        name: docker-playwright-test-reports
         path: target/cucumber-reports/
         retention-days: 7

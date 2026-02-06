@@ -1,4 +1,4 @@
-name: Security Testing
+name: Playwright Security Testing
 
 on:
   push:
@@ -30,7 +30,7 @@ jobs:
       with:
         args: --severity-threshold=high
 
-  api-security-tests:
+  playwright-security-tests:
     runs-on: ubuntu-latest
 
     steps:
@@ -48,19 +48,19 @@ jobs:
       run: |
         mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install --with-deps"
 
-    - name: Run Security Tests
+    - name: Run Playwright Security Tests
       run: |
-        mvn clean test -Dcucumber.filter.tags="@security"
+        mvn test -Dtest=**/CucumberTestRunner -Dcucumber.filter.tags="@security"
 
-    - name: Generate Security Test Reports
+    - name: Generate Playwright Security Test Reports
       if: always()
       run: |
         mvn verify
 
-    - name: Upload Security Test Reports
+    - name: Upload Playwright Security Test Reports
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: security-test-reports
+        name: playwright-security-test-reports
         path: target/cucumber-reports/
         retention-days: 30

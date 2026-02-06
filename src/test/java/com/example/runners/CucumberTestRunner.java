@@ -9,6 +9,10 @@ import static io.cucumber.junit.platform.engine.Constants.PLUGIN_PROPERTY_NAME;
 import static io.cucumber.junit.platform.engine.Constants.GLUE_PROPERTY_NAME;
 import static io.cucumber.junit.platform.engine.Constants.FILTER_TAGS_PROPERTY_NAME;
 
+/**
+ * Playwright API Test Runner
+ * Runs only Playwright-based API tests using Cucumber BDD framework
+ */
 @Suite
 @IncludeEngines("cucumber")
 @SelectClasspathResource("features")
@@ -17,4 +21,6 @@ import static io.cucumber.junit.platform.engine.Constants.FILTER_TAGS_PROPERTY_N
 @ConfigurationParameter(key = FILTER_TAGS_PROPERTY_NAME, value = "@sanity or @test")
 
 public class CucumberTestRunner {
+    // This class runs only Playwright API tests
+    // All tests are defined in feature files under src/test/resources/features/
 }

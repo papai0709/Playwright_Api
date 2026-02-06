@@ -80,9 +80,14 @@
                     <includes>
                         <include>**/CucumberTestRunner.java</include>
                     </includes>
+                    <excludes>
+                        <exclude>**/ApiTest.java</exclude>
+                        <exclude>**/AdvancedApiTest.java</exclude>
+                    </excludes>
                     <systemPropertyVariables>
                         <cucumber.filter.tags>${cucumber.filter.tags}</cucumber.filter.tags>
                     </systemPropertyVariables>
+                    <testFailureIgnore>false</testFailureIgnore>
                 </configuration>
             </plugin>
             <plugin>

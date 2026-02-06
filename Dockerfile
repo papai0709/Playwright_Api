@@ -28,22 +28,25 @@ RUN apt-get update && apt-get install -y \
     xvfb \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy Maven configuration files
+# Copy Maven configuration files first for better Docker layer caching
 COPY pom.xml .
-COPY src ./src
 
-# Download dependencies
-RUN mvn dependency:resolve
+# Download dependencies first (this layer will be cached if pom.xml doesn't change)
+RUN mvn dependency:resolve dependency:resolve-sources
 
 # Install Playwright browsers and dependencies
 RUN mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install --with-deps"
 
-# Set environment variables
+# Copy source code
+COPY src ./src
+
+# Set environment variables for Playwright
 ENV MAVEN_OPTS="-Xmx1024m"
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 
 # Create directory for reports
 RUN mkdir -p target/cucumber-reports
 
-# Default command
-CMD ["mvn", "clean", "test"]
+# Run Playwright tests by default
+CMD ["mvn", "test", "-Dtest=**/CucumberTestRunner"]

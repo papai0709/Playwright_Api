@@ -58,3 +58,24 @@ Feature: Advanced API Operations
     Then the response status should be 200
     And the response time should be less than 5000 milliseconds
 
+  @management
+  Scenario: User Management Operations
+    When I send a GET request to "/users"
+    Then the response status should be 200
+    And the response should contain user management data
+    And I can verify user roles and permissions
+
+  @management
+  Scenario: Post Management with Authorization
+    Given I have admin privileges
+    When I send a POST request to "/posts" with management authorization
+    Then the response status should be 201
+    And the post should be created with proper management metadata
+
+  @management
+  Scenario: Resource Management Validation
+    When I send a GET request to "/posts" with management filters
+    Then the response status should be 200
+    And the response should contain manageable resources
+    And management operations should be available
+

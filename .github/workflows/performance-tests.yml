@@ -1,4 +1,4 @@
-name: Performance Testing
+name: Playwright Performance Testing
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ on:
     - cron: '0 3 * * 0'
 
 jobs:
-  performance-tests:
+  playwright-performance-tests:
     runs-on: ubuntu-latest
 
     steps:
@@ -35,41 +35,38 @@ jobs:
       run: |
         mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install --with-deps"
 
-    - name: Run Performance Tests
+    - name: Run Playwright Performance Tests
       run: |
-        mvn clean test -Dcucumber.filter.tags="@performance"
+        mvn test -Dtest=**/CucumberTestRunner -Dcucumber.filter.tags="@performance"
 
-    - name: Run Load Tests (Light)
+    - name: Run Playwright Load Tests (Light)
       if: ${{ github.event.inputs.load_level == 'light' || github.event_name == 'schedule' }}
       run: |
-        echo "Running light load tests..."
-        # Add your load testing commands here
-        mvn clean test -Dcucumber.filter.tags="@load and @light"
+        echo "Running light load Playwright tests..."
+        mvn test -Dtest=**/CucumberTestRunner -Dcucumber.filter.tags="@load and @light"
 
-    - name: Run Load Tests (Medium)
+    - name: Run Playwright Load Tests (Medium)
       if: ${{ github.event.inputs.load_level == 'medium' }}
       run: |
-        echo "Running medium load tests..."
-        # Add your load testing commands here
-        mvn clean test -Dcucumber.filter.tags="@load and @medium"
+        echo "Running medium load Playwright tests..."
+        mvn test -Dtest=**/CucumberTestRunner -Dcucumber.filter.tags="@load and @medium"
 
-    - name: Run Load Tests (Heavy)
+    - name: Run Playwright Load Tests (Heavy)
       if: ${{ github.event.inputs.load_level == 'heavy' }}
       run: |
-        echo "Running heavy load tests..."
-        # Add your load testing commands here
-        mvn clean test -Dcucumber.filter.tags="@load and @heavy"
+        echo "Running heavy load Playwright tests..."
+        mvn test -Dtest=**/CucumberTestRunner -Dcucumber.filter.tags="@load and @heavy"
 
-    - name: Generate Performance Reports
+    - name: Generate Playwright Performance Reports
       if: always()
       run: |
         mvn verify
 
-    - name: Upload Performance Reports
+    - name: Upload Playwright Performance Reports
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: performance-reports
+        name: playwright-performance-reports
         path: |
           target/cucumber-reports/
           target/performance-reports/

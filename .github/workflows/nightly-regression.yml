@@ -1,4 +1,4 @@
-name: Nightly Regression Tests
+name: Nightly Playwright Regression Tests
 
 on:
   schedule:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  nightly-tests:
+  nightly-playwright-tests:
     runs-on: ubuntu-latest
 
     steps:
@@ -25,26 +25,26 @@ jobs:
       run: |
         mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install --with-deps"
 
-    - name: Run Full Regression Suite
+    - name: Run Playwright Full Regression Suite
       run: |
-        mvn clean test -Dcucumber.filter.tags="@regression or @sanity or @smoke"
+        mvn test -Dtest=**/CucumberTestRunner -Dcucumber.filter.tags="@regression or @sanity or @smoke"
 
-    - name: Generate Reports
+    - name: Generate Playwright Reports
       if: always()
       run: |
         mvn verify
 
-    - name: Upload Test Reports
+    - name: Upload Playwright Test Reports
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: nightly-test-reports
+        name: nightly-playwright-test-reports
         path: |
           target/cucumber-reports/
           target/surefire-reports/
         retention-days: 7
 
-    - name: Send Email Notification
+    - name: Send Email Notification on Playwright Test Failure
       if: failure()
       uses: dawidd6/action-send-mail@v3
       with:
@@ -52,9 +52,9 @@ jobs:
         server_port: 587
         username: ${{ secrets.EMAIL_USERNAME }}
         password: ${{ secrets.EMAIL_PASSWORD }}
-        subject: 'Nightly API Test Failure - ${{ github.repository }}'
+        subject: 'Nightly Playwright API Test Failure - ${{ github.repository }}'
         body: |
-          The nightly regression tests have failed.
+          The nightly Playwright regression tests have failed.
           
           Repository: ${{ github.repository }}
           Commit: ${{ github.sha }}
@@ -62,4 +62,4 @@ jobs:
           
           Please check the GitHub Actions logs for more details.
         to: ${{ secrets.NOTIFICATION_EMAIL }}
-        from: 'API Testing CI/CD'
+        from: 'Playwright Testing CI/CD'

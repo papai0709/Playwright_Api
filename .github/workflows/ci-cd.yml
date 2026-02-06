@@ -1,4 +1,4 @@
-name: API Testing CI/CD Pipeline
+name: Playwright API Testing CI/CD Pipeline
 
 on:
   push:
@@ -21,7 +21,7 @@ on:
           - production
 
 jobs:
-  test:
+  playwright-tests:
     runs-on: ubuntu-latest
 
     strategy:
@@ -43,60 +43,52 @@ jobs:
       run: |
         mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install --with-deps"
 
-    - name: Run Sanity Tests
+    - name: Run Playwright Sanity Tests
       if: github.event_name == 'pull_request'
       run: |
-        mvn clean test -Dcucumber.filter.tags="@sanity"
+        mvn test -Dtest=**/CucumberTestRunner -Dcucumber.filter.tags="@sanity"
 
-    - name: Run Smoke Tests
+    - name: Run Playwright Smoke Tests
       if: github.ref == 'refs/heads/develop'
       run: |
-        mvn clean test -Dcucumber.filter.tags="@smoke"
+        mvn test -Dtest=**/CucumberTestRunner -Dcucumber.filter.tags="@smoke"
 
-    - name: Run Full Regression Tests
+    - name: Run Playwright Full Tests
       if: github.ref == 'refs/heads/main'
       run: |
-        mvn clean test -Dcucumber.filter.tags="@regression or @sanity or @smoke"
+        mvn test -Dtest=**/CucumberTestRunner -Dcucumber.filter.tags="@regression or @sanity or @smoke"
 
-    - name: Run Custom Tests (Manual Trigger)
+    - name: Run Custom Playwright Tests (Manual Trigger)
       if: github.event_name == 'workflow_dispatch'
       run: |
-        mvn clean test -Dcucumber.filter.tags="${{ github.event.inputs.test_tags }}"
+        mvn test -Dtest=**/CucumberTestRunner -Dcucumber.filter.tags="${{ github.event.inputs.test_tags }}"
 
-    - name: Generate Cucumber Reports
+    - name: Generate Playwright Test Reports
       if: always()
       run: |
         mvn verify
 
-    - name: Upload Test Reports
+    - name: Upload Playwright Test Reports
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: test-reports-java-${{ matrix.java-version }}
+        name: playwright-test-reports-java-${{ matrix.java-version }}
         path: |
           target/cucumber-reports/
           target/surefire-reports/
         retention-days: 30
 
-    - name: Upload Coverage Reports
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: coverage-reports-java-${{ matrix.java-version }}
-        path: target/site/
-        retention-days: 30
-
-    - name: Publish Test Results
+    - name: Publish Playwright Test Results
       uses: dorny/test-reporter@v1
       if: always()
       with:
-        name: API Test Results (Java ${{ matrix.java-version }})
+        name: Playwright API Test Results (Java ${{ matrix.java-version }})
         path: target/cucumber-reports/report.xml
         reporter: java-junit
         fail-on-error: false
 
-  publish-reports:
-    needs: test
+  publish-playwright-reports:
+    needs: playwright-tests
     runs-on: ubuntu-latest
     if: always()
 
@@ -104,43 +96,17 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Download test reports
+    - name: Download Playwright test reports
       uses: actions/download-artifact@v4
       with:
-        pattern: test-reports-*
+        pattern: playwright-test-reports-*
         merge-multiple: true
         path: reports/
 
-    - name: Deploy to GitHub Pages
+    - name: Deploy Playwright Reports to GitHub Pages
       if: github.ref == 'refs/heads/main'
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./reports/cucumber-reports
-        destination_dir: test-reports
-
-  slack-notification:
-    needs: [test]
-    runs-on: ubuntu-latest
-    if: always()
-
-    steps:
-    - name: Slack Notification on Success
-      if: needs.test.result == 'success'
-      uses: 8398a7/action-slack@v3
-      with:
-        status: success
-        text: '✅ API Tests passed successfully!'
-        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
-
-    - name: Slack Notification on Failure
-      if: needs.test.result == 'failure'
-      uses: 8398a7/action-slack@v3
-      with:
-        status: failure
-        text: '❌ API Tests failed! Check the reports for details.'
-        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+        destination_dir: playwright-test-reports
