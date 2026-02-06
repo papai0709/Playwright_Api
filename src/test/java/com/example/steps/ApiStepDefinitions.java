@@ -7,7 +7,6 @@ import io.cucumber.java.Before;
 import io.cucumber.java.en.*;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -56,13 +55,24 @@ public class ApiStepDefinitions {
     }
 
     @Given("I have access to the {string} API with custom headers")
-    public void i_have_access_to_the_json_placeholder_api_with_custom_headers() {
+    public void i_have_access_to_the_json_placeholder_api_with_custom_headers(String apiName) {
         Map<String, String> headers = new HashMap<>();
         headers.put("Accept", "application/json");
         headers.put("User-Agent", "Playwright-Java-BDD");
 
+        // Dynamically set the base URL based on the API name
+        String baseUrl;
+        switch (apiName) {
+            case "JSONPlaceholder":
+                baseUrl = "https://jsonplaceholder.typicode.com";
+                break;
+            default:
+                baseUrl = "https://jsonplaceholder.typicode.com"; // Default fallback
+                System.out.println("Using default URL for API: " + apiName);
+        }
+
         request = playwright.request().newContext(new APIRequest.NewContextOptions()
-                .setBaseURL("https://jsonplaceholder.typicode.com")
+                .setBaseURL(baseUrl)
                 .setExtraHTTPHeaders(headers));
     }
 
