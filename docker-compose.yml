@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  playwright-tests:
+    build: .
+    container_name: playwright-api-tests
+    volumes:
+      - ./target:/app/target
+      - ./src:/app/src
+    environment:
+      - MAVEN_OPTS=-Xmx1024m
+    command: mvn clean test -Dcucumber.filter.tags="@sanity"
+
+  playwright-tests-regression:
+    build: .
+    container_name: playwright-api-regression
+    volumes:
+      - ./target:/app/target
+      - ./src:/app/src
+    environment:
+      - MAVEN_OPTS=-Xmx2048m
+    command: mvn clean test -Dcucumber.filter.tags="@regression or @sanity or @smoke"
+
+networks:
+  default:
+    name: playwright-network

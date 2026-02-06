@@ -1,0 +1,146 @@
+name: API Testing CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop, feature/** ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      test_tags:
+        description: 'Cucumber tags to run (e.g., @smoke, @sanity, @regression)'
+        required: false
+        default: '@sanity'
+      environment:
+        description: 'Environment to test against'
+        required: false
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        java-version: [17, 21]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up JDK ${{ matrix.java-version }}
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ matrix.java-version }}
+        distribution: 'temurin'
+        cache: maven
+
+    - name: Install Playwright dependencies
+      run: |
+        mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install --with-deps"
+
+    - name: Run Sanity Tests
+      if: github.event_name == 'pull_request'
+      run: |
+        mvn clean test -Dcucumber.filter.tags="@sanity"
+
+    - name: Run Smoke Tests
+      if: github.ref == 'refs/heads/develop'
+      run: |
+        mvn clean test -Dcucumber.filter.tags="@smoke"
+
+    - name: Run Full Regression Tests
+      if: github.ref == 'refs/heads/main'
+      run: |
+        mvn clean test -Dcucumber.filter.tags="@regression or @sanity or @smoke"
+
+    - name: Run Custom Tests (Manual Trigger)
+      if: github.event_name == 'workflow_dispatch'
+      run: |
+        mvn clean test -Dcucumber.filter.tags="${{ github.event.inputs.test_tags }}"
+
+    - name: Generate Cucumber Reports
+      if: always()
+      run: |
+        mvn verify
+
+    - name: Upload Test Reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-reports-java-${{ matrix.java-version }}
+        path: |
+          target/cucumber-reports/
+          target/surefire-reports/
+        retention-days: 30
+
+    - name: Upload Coverage Reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: coverage-reports-java-${{ matrix.java-version }}
+        path: target/site/
+        retention-days: 30
+
+    - name: Publish Test Results
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: API Test Results (Java ${{ matrix.java-version }})
+        path: target/cucumber-reports/report.xml
+        reporter: java-junit
+        fail-on-error: false
+
+  publish-reports:
+    needs: test
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Download test reports
+      uses: actions/download-artifact@v4
+      with:
+        pattern: test-reports-*
+        merge-multiple: true
+        path: reports/
+
+    - name: Deploy to GitHub Pages
+      if: github.ref == 'refs/heads/main'
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./reports/cucumber-reports
+        destination_dir: test-reports
+
+  slack-notification:
+    needs: [test]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+    - name: Slack Notification on Success
+      if: needs.test.result == 'success'
+      uses: 8398a7/action-slack@v3
+      with:
+        status: success
+        text: '✅ API Tests passed successfully!'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+    - name: Slack Notification on Failure
+      if: needs.test.result == 'failure'
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        text: '❌ API Tests failed! Check the reports for details.'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
