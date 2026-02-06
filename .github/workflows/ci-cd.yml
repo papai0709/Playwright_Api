@@ -1,10 +1,17 @@
-name: Playwright API Testing CI/CD Pipeline
+name: Playwright API Tests
 
 on:
   push:
     branches: [ main, develop, feature/** ]
+    paths:
+      - 'src/**'
+      - 'pom.xml'
+      - '.github/workflows/ci-cd.yml'
   pull_request:
     branches: [ main, develop ]
+    paths:
+      - 'src/**'
+      - 'pom.xml'
   workflow_dispatch:
     inputs:
       test_tags:
@@ -24,18 +31,14 @@ jobs:
   playwright-tests:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        java-version: [17, 21]
-
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up JDK ${{ matrix.java-version }}
+    - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
-        java-version: ${{ matrix.java-version }}
+        java-version: '17'
         distribution: 'temurin'
         cache: maven
 
@@ -72,7 +75,7 @@ jobs:
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: playwright-test-reports-java-${{ matrix.java-version }}
+        name: playwright-test-reports
         path: |
           target/cucumber-reports/
           target/surefire-reports/
@@ -82,7 +85,7 @@ jobs:
       uses: dorny/test-reporter@v1
       if: always()
       with:
-        name: Playwright API Test Results (Java ${{ matrix.java-version }})
+        name: Playwright API Test Results
         path: target/cucumber-reports/report.xml
         reporter: java-junit
         fail-on-error: false
@@ -99,8 +102,7 @@ jobs:
     - name: Download Playwright test reports
       uses: actions/download-artifact@v4
       with:
-        pattern: playwright-test-reports-*
-        merge-multiple: true
+        name: playwright-test-reports
         path: reports/
 
     - name: Deploy Playwright Reports to GitHub Pages

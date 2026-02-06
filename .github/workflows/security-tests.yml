@@ -3,8 +3,9 @@ name: Playwright Security Testing
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'pom.xml'
   schedule:
     # Run security scans every day at 1 AM
     - cron: '0 1 * * *'

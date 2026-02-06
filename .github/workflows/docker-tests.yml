@@ -1,11 +1,10 @@
 name: Docker Playwright Container Testing
 
 on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
+  schedule:
+    # Run Docker tests weekly on Sundays at 4 AM
+    - cron: '0 4 * * 0'
 
 jobs:
   docker-playwright-tests:
