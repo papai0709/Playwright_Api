@@ -49,6 +49,11 @@ jobs:
       run: |
         mvn test -Dtest=**/CucumberTestRunner -Dcucumber.filter.tags="@regression or @sanity or @smoke"
 
+    - name: Run Scheduled Playwright Tests
+      if: github.event_name == 'schedule'
+      run: |
+        mvn test -Dtest=**/CucumberTestRunner -Dcucumber.filter.tags="@regression or @sanity or @smoke"
+
     - name: Run Custom Playwright Tests (Manual Trigger)
       if: github.event_name == 'workflow_dispatch'
       run: |
